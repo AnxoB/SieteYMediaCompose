@@ -14,12 +14,13 @@ fun main() = singleWindowApplication {
 
 @Composable
 fun SieteYMediaApp() {
-    val sieteYMedia = remember { SieteYMedia() }
-    var jugadorCartas by remember { mutableStateOf(sieteYMedia.getCartasJugador().toList()) }
-    var bancaCartas by remember { mutableStateOf(sieteYMedia.getCartasBanca().toList()) }
-    var jugadorPuntuacion by remember { mutableStateOf(0.0) }
-    var bancaPuntuacion by remember { mutableStateOf(0.0) }
+    var sieteYMedia by remember { mutableStateOf(SieteYMedia()) }
+    var jugadorCartas by remember { mutableStateOf(sieteYMedia.getCartasJugador().filterNotNull().toList()) }
+    var bancaCartas by remember { mutableStateOf(sieteYMedia.getCartasBanca().filterNotNull().toList()) }
+    var jugadorPuntuacion by remember { mutableStateOf(sieteYMedia.valorCartas(sieteYMedia.getCartasJugador())) }
+    var bancaPuntuacion by remember { mutableStateOf(sieteYMedia.valorCartas(sieteYMedia.getCartasBanca())) }
     var mensaje by remember { mutableStateOf("") }
+    var juegoFinalizado by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -30,9 +31,7 @@ fun SieteYMediaApp() {
         Text("Jugador", style = MaterialTheme.typography.h5)
         LazyColumn {
             items(jugadorCartas) { carta ->
-                if (carta != null) {
-                    Text("${carta.numero} de ${carta.palo}")
-                }
+                Text("${carta.numero} de ${carta.palo}")
             }
         }
         Text("Puntuación: $jugadorPuntuacion")
@@ -41,13 +40,14 @@ fun SieteYMediaApp() {
 
         Button(onClick = {
             sieteYMedia.turnoJugador()
-            jugadorCartas = sieteYMedia.getCartasJugador().toList()
+            jugadorCartas = sieteYMedia.getCartasJugador().filterNotNull().toList()
             jugadorPuntuacion = sieteYMedia.valorCartas(sieteYMedia.getCartasJugador())
 
             if (sieteYMedia.jugadorSePaso()) {
                 mensaje = "El jugador se ha pasado. ¡Gana la banca!"
+                juegoFinalizado=true
             }
-        }) {
+        }, enabled = !juegoFinalizado) {
             Text("Pedir")
         }
 
@@ -55,15 +55,16 @@ fun SieteYMediaApp() {
 
         Button(onClick = {
             sieteYMedia.turnoBanca()
-            bancaCartas = sieteYMedia.getCartasBanca().toList()
+            bancaCartas = sieteYMedia.getCartasBanca().filterNotNull().toList()
             bancaPuntuacion = sieteYMedia.valorCartas(sieteYMedia.getCartasBanca())
 
             mensaje = when {
                 sieteYMedia.bancaSePaso() -> "La banca se ha pasado. ¡Gana el jugador!"
-                bancaPuntuacion > jugadorPuntuacion -> "¡Gana la banca!"
+                bancaPuntuacion >= jugadorPuntuacion -> "¡Gana la banca!"
                 else -> "¡Gana el jugador!"
             }
-        }) {
+            juegoFinalizado = true
+        }, enabled = !juegoFinalizado) {
             Text("Plantarse")
         }
 
@@ -76,11 +77,23 @@ fun SieteYMediaApp() {
         Text("Banca", style = MaterialTheme.typography.h5)
         LazyColumn {
             items(bancaCartas) { carta ->
-                if (carta != null) {
-                    Text("${carta.numero} de ${carta.palo}")
-                }
+                Text("${carta.numero} de ${carta.palo}")
             }
         }
         Text("Puntuación: $bancaPuntuacion")
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = {
+            sieteYMedia = SieteYMedia()
+            jugadorCartas = sieteYMedia.getCartasJugador().filterNotNull().toList()
+            bancaCartas = sieteYMedia.getCartasBanca().filterNotNull().toList()
+            jugadorPuntuacion = sieteYMedia.valorCartas(sieteYMedia.getCartasJugador())
+            bancaPuntuacion = sieteYMedia.valorCartas(sieteYMedia.getCartasBanca())
+            mensaje = ""
+            juegoFinalizado = false
+        }) {
+            Text("Reiniciar")
+        }
     }
 }
